@@ -28,7 +28,7 @@ class Rules():
         self.rules = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect((20, 140), (120, 50)),
             text='Правила игры',
-            manager=manager
+            manager=manager,
         )
         self.back = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect((20, 20), (50, 25)),
@@ -78,21 +78,26 @@ def terminate():
 def start_screen():
     intro_text = ["WAR OF THE WORLDS", "",
                   "",
-                  "Нажмите PLAY для начала игры",
-                  "Восстановите игру"]
+                  "Добро пожаловать в WAR OF THE WORLDS",
+                  "Нажмите PLAY для начала игры"]
 
     fon = pygame.transform.scale(load_image('fon.jpg'),
                                  (WIDTH, HEIGHT))
     rul = Rules()
+    play = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((20, 410), (100, 50)),
+        text='PLAY',
+        manager=manager,
+    )
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 100
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
-        text_coord += 10
+        text_coord += 15
         intro_rect.top = text_coord
-        intro_rect.x = 10
+        intro_rect.x = 15
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
@@ -101,8 +106,6 @@ def start_screen():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN:
-                return True
             elif event.type == pygame.USEREVENT:
                 if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == rul.rules:
@@ -110,6 +113,8 @@ def start_screen():
                     if event.ui_element == rul.back:
                         rul.hide_text()
                         start_screen()
+                    if event.ui_element == play:
+                        return True
             manager.process_events(event)
         manager.update(time_delta)
         manager.draw_ui(screen)
