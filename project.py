@@ -44,7 +44,7 @@ class Rules:
         self.text = pygame_gui.elements.ui_text_box.UITextBox(
             html_text='О нет! Земле угрожает опасность! Танос снова '
                       'решил напасть на наш народ! Именно Вам '
-                      'предстоит спасти Землю от ужасного Таноса! '
+                      'предстоит спасти Землю от ужасного злодея! '
                       'Вперед! <br>Перед Вами'
                       ' стоит 5 препядствий, которые нужно выполнить.'
                       'Для паузы нажмите <u>Enter</u>, для сохранения'
@@ -73,7 +73,7 @@ pygame.init()
 fl = False
 size = WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode(size)
-manager = pygame_gui.UIManager((800, 600))
+manager = pygame_gui.UIManager((800, 600), 'buttons.json')
 clock = pygame.time.Clock()
 
 FPS = 50
@@ -83,13 +83,9 @@ class Cursor(pygame.sprite.Sprite):
     image = load_image("cur.png")
 
     def __init__(self, *group):
-        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
-        # Это очень важно!!!
         super().__init__(*group)
         self.image = Cursor.image
         self.rect = self.image.get_rect()
-        # self.rect.x = random.randrange(width-120)
-        # self.rect.y = random.randrange(height-120)
 
     def update(self, coord):
         self.rect.x = coord[0]
@@ -120,7 +116,8 @@ def start_screen():
     font = pygame.font.Font(None, 30)
     text_coord = 100
     for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('white'))
+        string_rendered = font.render(line, True,
+                                      pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
         text_coord += 15
         intro_rect.top = text_coord
@@ -136,6 +133,11 @@ def start_screen():
             if event.type == pygame.USEREVENT:
                 if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == play1.play:
+                        screen.fill((235, 195, 155))
+                        pygame.mouse.set_visible(False)
+                        all_sprites.update(pygame.mouse.get_pos())
+                        all_sprites.draw(screen)
+                        pygame.display.flip()
                         return True
                     if event.ui_element == rul.rules:
                         rul.show_rules()
@@ -155,9 +157,10 @@ def start_screen():
                         font = pygame.font.Font(None, 30)
                         text_coord = 100
                         for line in intro_text:
-                            string_rendered = font.render(line, 1,
-                                                          pygame.Color(
-                                                              'white'))
+                            string_rendered = font.render(line, True,
+                                                          pygame.Color
+                                                          ('whi'
+                                                           'te'))
                             intro_rect = string_rendered.get_rect()
                             text_coord += 15
                             intro_rect.top = text_coord
