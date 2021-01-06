@@ -1,7 +1,7 @@
 import os
 import sys
 import pygame_gui
-
+import random
 import pygame
 
 
@@ -91,10 +91,60 @@ class Cursor(pygame.sprite.Sprite):
         self.rect.x = coord[0]
         self.rect.y = coord[1]
 
-
+clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
+sprites = pygame.sprite.Group()
 
-Cursor(all_sprites)
+
+def levels():
+    level1 = pygame.sprite.Sprite()
+    level1.image = load_image("planet.png")
+    level1.rect = level1.image.get_rect()
+    all_sprites.add(level1)
+    level1.rect.x = 70
+    level1.rect.y = 450
+    level2 = pygame.sprite.Sprite()
+    level2.image = load_image("planet2.png")
+    level2.rect = level2.image.get_rect()
+    all_sprites.add(level2)
+    level2.rect.x = 630
+    level2.rect.y = 350
+    level3 = pygame.sprite.Sprite()
+    level3.image = load_image("planet3.png")
+    level3.rect = level3.image.get_rect()
+    all_sprites.add(level3)
+    level3.rect.x = 70
+    level3.rect.y = 250
+    level4 = pygame.sprite.Sprite()
+    level4.image = load_image("planet4.png")
+    level4.rect = level4.image.get_rect()
+    all_sprites.add(level4)
+    level4.rect.x = 630
+    level4.rect.y = 150
+    level5 = pygame.sprite.Sprite()
+    level5.image = load_image("planet5.png")
+    level5.rect = level5.image.get_rect()
+    all_sprites.add(level5)
+    level5.rect.x = 70
+    level5.rect.y = 50
+
+
+class Star(pygame.sprite.Sprite):
+    image = load_image("star.png")
+
+    def __init__(self, x, y, *group):
+        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
+        # Это очень важно!!!
+        super().__init__(*group)
+        self.image = Star.image
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.i = 2
+
+    def update(self):
+        self.i = self.i * (-1)
+        self.rect = self.rect.move(self.i, self.i)
 
 
 def terminate():
@@ -133,7 +183,8 @@ def start_screen():
             if event.type == pygame.USEREVENT:
                 if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == play1.play:
-                        screen.fill((235, 195, 155))
+                        screen.fill((101, 86, 120))
+                        levels()
                         pygame.mouse.set_visible(False)
                         all_sprites.update(pygame.mouse.get_pos())
                         all_sprites.draw(screen)
@@ -178,6 +229,12 @@ running = False
 if start_screen():
     running = True
 
+for i in range(8):
+    for j in range(6):
+        Star(i*100, j*100, sprites)
+levels()
+Cursor(all_sprites)
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -189,6 +246,11 @@ while running:
             pygame.display.flip()
         else:
             pygame.display.flip()
-            screen.fill((235, 195, 155))
-    screen.fill((235, 195, 155))
+            screen.fill((101, 86, 120))
+            all_sprites.draw(screen)
+    screen.fill((101, 86, 120))
+    sprites.draw(screen)
+    #sprites.update()
+    all_sprites.draw(screen)
+    pygame.display.flip()
 pygame.quit()
