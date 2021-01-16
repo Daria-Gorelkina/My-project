@@ -4,6 +4,9 @@ import pygame_gui
 import random
 import pygame
 
+TIMER_EVENT_TYPE = pygame.USEREVENT + 1
+running = False
+
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -37,6 +40,7 @@ class Rules:
         self.back.hide()
 
     def show_rules(self):
+        pygame.display.flip()
         fon = pygame.transform.scale(load_image('fon.jpg'),
                                      (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
@@ -69,12 +73,38 @@ class Play:
         self.play.show()
 
 
+class Button:
+    def __init__(self):
+        self.width = 200
+        self.height = 60
+        self.x = 300
+        self.y = 320
+
+    def render(self):
+        font = pygame.font.Font(None, 30)
+        text = font.render('Играть заново', True, (0, 0, 0))
+        pygame.draw.rect(screen, (114, 51, 119),
+                         (self.x, self.y, self.width, self.height), 0)
+        screen.blit(text,
+                    (self.x + (self.width - text.get_width()) // 2,
+                     self.y + (self.height - text.get_height()) // 2))
+
+    def check_click(self, pos):
+        if self.x <= pos[0] <= self.width + self.x and \
+                self.y <= pos[1] <= self.height + self.y:
+            global running
+            running = True
+            main()
+
+
 pygame.init()
 fl = False
 size = WIDTH, HEIGHT = 800, 600
+pygame.time.set_timer(TIMER_EVENT_TYPE, 20)
 screen = pygame.display.set_mode(size)
 manager = pygame_gui.UIManager((800, 600), 'buttons.json')
 clock = pygame.time.Clock()
+delay = 1000
 FPS = 60
 
 
@@ -84,9 +114,57 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, *group):
         super().__init__(*group)
         self.image = Player.image
+        self.move = 0
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = 325
         self.rect.y = 450
+
+    def update(self):
+        self.move = 0
+        key = pygame.key.get_pressed()
+        if key[pygame.K_LEFT]:
+            self.move = -5
+        if key[pygame.K_RIGHT]:
+            self.move = 5
+        if key[pygame.K_a]:
+            self.move = -5
+        if key[pygame.K_d]:
+            self.move = 5
+        self.rect.x += self.move
+        if self.rect.x + 150 > 800:
+            self.rect.x = 650
+        if self.rect.x < 0:
+            self.rect.x = 0
+
+
+sprites = pygame.sprite.Group()
+
+
+class Meteorite(pygame.sprite.Sprite):
+    image = load_image("meteor.png")
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = Meteorite.image
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(800 - 180)
+        self.rect.y = random.randrange(-100, -40)
+        self.y = random.randrange(2, 7)
+        self.x = random.randrange(-2, 2)
+
+    def update(self):
+        self.rect.y += self.y
+        self.rect.x += self.x
+        if self.rect.y > 600 or self.rect.x < -180 or \
+                self.rect.x > 980:
+            self.rect.x = random.randrange(800 - 180)
+            self.rect.y = random.randrange(-100, -40)
+            self.y = random.randrange(2, 7)
+        if pygame.sprite.collide_mask(self, player):
+            pygame.time.set_timer(TIMER_EVENT_TYPE, 0)
+            you_lose()
 
 
 class Cursor(pygame.sprite.Sprite):
@@ -104,6 +182,21 @@ class Cursor(pygame.sprite.Sprite):
 
 all_sprites = pygame.sprite.Group()
 Cursor(all_sprites)
+
+
+def main_game():
+    fon = pygame.transform.scale(
+        load_image('fon2.jpg'),
+        (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    all_sprites.draw(screen)
+    sprites.draw(screen)
+
+
+def you_lose():
+    sprites.empty()
+    global running
+    running = False
 
 
 def terminate():
@@ -212,32 +305,55 @@ def start_screen():
         clock.tick(FPS)
 
 
-running = False
+def main():
+    global player
+    player = Player(sprites)
+    pygame.time.set_timer(TIMER_EVENT_TYPE, 20)
+    for _ in range(5):
+        Meteorite(sprites)
+    global running
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if pygame.mouse.get_focused():
+                pygame.mouse.set_visible(False)
+                all_sprites.update(pygame.mouse.get_pos())
+                all_sprites.draw(screen)
+                pygame.display.flip()
+            else:
+                pygame.display.flip()
+                main_game()
+            if event.type == TIMER_EVENT_TYPE:
+                sprites.update()
+        main_game()
+        pygame.display.flip()
+
+
+button = Button()
 if start_screen():
     running = True
-
-player = Player(all_sprites)
-
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if pygame.mouse.get_focused():
-            pygame.mouse.set_visible(False)
-            all_sprites.update(pygame.mouse.get_pos())
-            all_sprites.draw(screen)
-            pygame.display.flip()
-        else:
-            pygame.display.flip()
-            fon = pygame.transform.scale(
-                load_image('fon2.jpg'),
-                (WIDTH, HEIGHT))
-            screen.blit(fon, (0, 0))
-            all_sprites.draw(screen)
-    fon = pygame.transform.scale(
-        load_image('fon2.jpg'),
-        (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    all_sprites.draw(screen)
-    pygame.display.flip()
+    main()
+if not running:
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if pygame.mouse.get_focused():
+                pygame.mouse.set_visible(False)
+                all_sprites.update(pygame.mouse.get_pos())
+                all_sprites.draw(screen)
+                pygame.display.flip()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                button.check_click(event.pos)
+        fon = pygame.transform.scale(
+            load_image('fon2.jpg'),
+            (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        pygame.draw.rect(screen, (134, 85, 235), (100, 100, 600, 400),
+                         0)
+        button.render()
+        all_sprites.update(pygame.mouse.get_pos())
+        all_sprites.draw(screen)
+        pygame.display.flip()
 pygame.quit()
