@@ -6,6 +6,11 @@ import pygame
 
 TIMER_EVENT_TYPE = pygame.USEREVENT + 1
 running = False
+is_paused = False
+count = 0
+f = open('best_count', encoding="utf8")
+BEST_COUNT = int(f.read())
+f.close()
 
 
 def load_image(name, colorkey=None):
@@ -77,7 +82,7 @@ class Button:
         self.width = 200
         self.height = 60
         self.x = 300
-        self.y = 320
+        self.y = 340
 
     def render(self):
         font = pygame.font.Font(None, 30)
@@ -97,6 +102,61 @@ class Button:
             bullets.empty()
             meteorits.empty()
             main()
+
+
+class ButtonOut:
+    def __init__(self):
+        self.width = 200
+        self.height = 60
+        self.x = 300
+        self.y = 220
+
+    def render(self):
+        font = pygame.font.Font(None, 30)
+        text = font.render('Выйти из игры', True, (0, 0, 0))
+        pygame.draw.rect(screen, (114, 51, 119),
+                         (self.x, self.y, self.width, self.height), 0)
+        screen.blit(text,
+                    (self.x + (self.width - text.get_width()) // 2,
+                     self.y + (self.height - text.get_height()) // 2))
+
+    def check_click(self, pos):
+        if self.x <= pos[0] <= self.width + self.x and \
+                self.y <= pos[1] <= self.height + self.y:
+            terminate()
+
+
+class ButtonPause:
+    def __init__(self):
+        self.width = 100
+        self.height = 50
+        self.x = 700
+        self.y = 0
+
+    def render(self):
+        font = pygame.font.Font(None, 30)
+        text = font.render('Пауза', True, (0, 0, 0))
+        pygame.draw.rect(screen, (114, 51, 119),
+                         (self.x, self.y, self.width, self.height), 0)
+        screen.blit(text,
+                    (self.x + (self.width - text.get_width()) // 2,
+                     self.y + (self.height - text.get_height()) // 2))
+
+    def check_click(self, pos):
+        if self.x <= pos[0] <= self.width + self.x and \
+                self.y <= pos[1] <= self.height + self.y:
+            global is_paused
+            is_paused = not is_paused
+            pygame.time.set_timer(TIMER_EVENT_TYPE, 0 if is_paused else 20)
+
+    def render2(self):
+        font = pygame.font.Font(None, 20)
+        text = font.render('Продолжить', True, (0, 0, 0))
+        pygame.draw.rect(screen, (114, 51, 119),
+                         (self.x, self.y, self.width, self.height), 0)
+        screen.blit(text,
+                    (self.x + (self.width - text.get_width()) // 2,
+                     self.y + (self.height - text.get_height()) // 2))
 
 
 pygame.init()
@@ -216,6 +276,8 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.y += self.move
         if pygame.sprite.groupcollide(bullets, enemys, True, True):
             Enemy(enemys)
+            global count
+            count += 1
 
 
 class Cursor(pygame.sprite.Sprite):
@@ -245,6 +307,12 @@ def main_game():
     enemys.draw(screen)
     bullets.draw(screen)
     meteorits.draw(screen)
+
+
+def write_count(count):
+    font = pygame.font.Font(None, 30)
+    text = font.render(f'Текущий счет: {count}', True, (255, 255, 255))
+    screen.blit(text, (5, 5))
 
 
 def you_lose():
@@ -364,6 +432,9 @@ def start_screen():
         clock.tick(FPS)
 
 
+button_pause = ButtonPause()
+
+
 def main():
     global player
     player = Player(sprites)
@@ -387,21 +458,34 @@ def main():
             else:
                 pygame.display.flip()
                 main_game()
+                if is_paused:
+                    button_pause.render2()
+                else:
+                    button_pause.render()
+                write_count(count)
             if event.type == TIMER_EVENT_TYPE:
                 sprites.update()
                 enemys.update()
                 bullets.update()
                 meteorits.update()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                button_pause.check_click(event.pos)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     bullet = Bullet(bullets)
                     bullet.move = -10
         main_game()
+        button_pause.render()
+        if is_paused:
+            button_pause.render2()
+        write_count(count)
         pygame.display.flip()
 
 
 button = Button()
+button_out = ButtonOut()
 if start_screen():
+    count = 0
     running = True
     main()
 if not running:
@@ -416,13 +500,25 @@ if not running:
                 pygame.display.flip()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 button.check_click(event.pos)
+                button_out.check_click(event.pos)
         fon = pygame.transform.scale(
             load_image('fon2.jpg'),
             (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
         pygame.draw.rect(screen, (134, 85, 235), (100, 100, 600, 400),
                          0)
+        font = pygame.font.Font(None, 30)
+        text = font.render(f'Ваш счет: {count}', True, (0, 0, 0))
+        if count > BEST_COUNT:
+            BEST_COUNT = count
+            f = open("best_count", mode='w')
+            f.write(f'{count}')
+            f.close()
+        textBC = font.render(f'Лучший счет: {BEST_COUNT}', True, (0, 0, 0))
+        screen.blit(text, (300, 125))
+        screen.blit(textBC, (300, 165))
         button.render()
+        button_out.render()
         all_sprites.update(pygame.mouse.get_pos())
         all_sprites.draw(screen)
         pygame.display.flip()
