@@ -40,7 +40,6 @@ class Rules:
         self.back.hide()
 
     def show_rules(self):
-        pygame.display.flip()
         fon = pygame.transform.scale(load_image('fon.jpg'),
                                      (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
@@ -94,6 +93,9 @@ class Button:
                 self.y <= pos[1] <= self.height + self.y:
             global running
             running = True
+            enemys.empty()
+            bullets.empty()
+            meteorits.empty()
             main()
 
 
@@ -139,6 +141,9 @@ class Player(pygame.sprite.Sprite):
 
 
 sprites = pygame.sprite.Group()
+enemys = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
+meteorits = pygame.sprite.Group()
 
 
 class Meteorite(pygame.sprite.Sprite):
@@ -165,6 +170,52 @@ class Meteorite(pygame.sprite.Sprite):
         if pygame.sprite.collide_mask(self, player):
             pygame.time.set_timer(TIMER_EVENT_TYPE, 0)
             you_lose()
+        a = pygame.sprite.groupcollide(bullets, meteorits, True, False)
+
+
+class Enemy(pygame.sprite.Sprite):
+    image = load_image("enemy.png")
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = Enemy.image
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randrange(800 - 180)
+        self.rect.y = random.randrange(-100, -40)
+        self.y = random.randrange(2, 7)
+        self.x = random.randrange(-2, 2)
+
+    def update(self):
+        self.rect.y += self.y
+        self.rect.x += self.x
+        if self.rect.y > 600 or self.rect.x < -180 or \
+                self.rect.x > 980:
+            self.rect.x = random.randrange(800 - 180)
+            self.rect.y = random.randrange(-100, -40)
+            self.y = random.randrange(2, 7)
+        if pygame.sprite.collide_mask(self, meteor):
+            self.rect.x = random.randrange(800 - 180)
+            self.rect.y = random.randrange(-100, -40)
+            self.y = random.randrange(2, 7)
+
+
+class Bullet(pygame.sprite.Sprite):
+    image = load_image("boom.png")
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = Bullet.image
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.x = player.rect.x + 55
+        self.rect.y = 535
+        self.move = -10
+
+    def update(self):
+        self.rect.y += self.move
+        if pygame.sprite.groupcollide(bullets, enemys, True, True):
+            Enemy(enemys)
 
 
 class Cursor(pygame.sprite.Sprite):
@@ -191,6 +242,9 @@ def main_game():
     screen.blit(fon, (0, 0))
     all_sprites.draw(screen)
     sprites.draw(screen)
+    enemys.draw(screen)
+    bullets.draw(screen)
+    meteorits.draw(screen)
 
 
 def you_lose():
@@ -228,6 +282,7 @@ def start_screen():
         screen.blit(string_rendered, intro_rect)
 
     while True:
+        flag = False
         time_delta = clock.tick(60) / 1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -248,8 +303,10 @@ def start_screen():
                         pygame.display.flip()
                         return True
                     if event.ui_element == rul.rules:
+                        flag = True
                         rul.show_rules()
                     if event.ui_element == rul.back:
+                        flag = False
                         rul.hide_text()
                         intro_text = ["WAR OF THE WORLDS", "",
                                       "",
@@ -276,12 +333,14 @@ def start_screen():
                             text_coord += intro_rect.height
                             screen.blit(string_rendered, intro_rect)
             manager.process_events(event)
-        intro_text = ["WAR OF THE WORLDS", "",
-                      "",
-                      "Добро пожаловать в WAR OF "
-                      "THE WORLDS",
-                      "Нажмите PLAY для начала игры"]
-
+        if flag:
+            intro_text = []
+        else:
+            intro_text = ["WAR OF THE WORLDS", "",
+                          "",
+                          "Добро пожаловать в WAR OF "
+                          "THE WORLDS",
+                          "Нажмите PLAY для начала игры"]
         fon = pygame.transform.scale(
             load_image('fon.jpg'),
             (WIDTH, HEIGHT))
@@ -309,8 +368,12 @@ def main():
     global player
     player = Player(sprites)
     pygame.time.set_timer(TIMER_EVENT_TYPE, 20)
-    for _ in range(5):
-        Meteorite(sprites)
+    for _ in range(2):
+        global enemy
+        enemy = Enemy(enemys)
+    for _ in range(3):
+        global meteor
+        meteor = Meteorite(meteorits)
     global running
     while running:
         for event in pygame.event.get():
@@ -326,6 +389,13 @@ def main():
                 main_game()
             if event.type == TIMER_EVENT_TYPE:
                 sprites.update()
+                enemys.update()
+                bullets.update()
+                meteorits.update()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    bullet = Bullet(bullets)
+                    bullet.move = -10
         main_game()
         pygame.display.flip()
 
