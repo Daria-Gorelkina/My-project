@@ -50,13 +50,13 @@ class Rules:
         screen.blit(fon, (0, 0))
         self.rules.hide()
         self.text = pygame_gui.elements.ui_text_box.UITextBox(
-            html_text='О нет! Земле угрожает опасность! Танос снова '
-                      'решил напасть на наш народ! Именно Вам '
-                      'предстоит спасти Землю от ужасного злодея! '
-                      'Вперед! <br>Перед Вами'
-                      ' стоит 5 препядствий, которые нужно выполнить.'
-                      'Для паузы нажмите <u>Enter</u>, для сохранения'
-                      ' игры <u>Ctrl+S</u>.',
+            html_text='<b>О нет! Земле угрожают злые монстры! '
+                      'Помогите одержать над ними победу!'
+                      'Управляйте космическим кораблем с помощью '
+                      'стрелок <u><--</u> и <u>--></u>'
+                      ' или с помощью букв <u>A</u> и <u>D</u>. Для '
+                      'стрельбы используйте клавишу <u>ESCAPE</u>. '
+                      'Удачи!</b>',
             relative_rect=pygame.Rect((150, 100), (500, 400)),
             manager=manager
         )
@@ -101,6 +101,8 @@ class Button:
             enemys.empty()
             bullets.empty()
             meteorits.empty()
+            global count
+            count = 0
             main()
 
 
@@ -485,7 +487,7 @@ def main():
 button = Button()
 button_out = ButtonOut()
 if start_screen():
-    count = 0
+    # count = 0
     running = True
     main()
 if not running:
