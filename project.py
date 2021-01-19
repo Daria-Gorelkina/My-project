@@ -55,7 +55,7 @@ class Rules:
                       'Помогите одержать над ними победу!'
                       'Управляйте космическим кораблем с помощью '
                       'стрелок <u><--</u> и <u>--></u>'
-                      ' или с помощью клавищ <u>A</u> и <u>D</u>. Для'
+                      ' или с помощью клавиш <u>A</u> и <u>D</u>. Для'
                       ' стрельбы используйте клавишу <u>ESCAPE</u>. '
                       'Опасайтесь метеоритов!'
                       'Удачи!</b>',
@@ -173,7 +173,7 @@ screen = pygame.display.set_mode(size)
 manager = pygame_gui.UIManager((800, 600), 'buttons.json')
 clock = pygame.time.Clock()
 delay = 1000
-FPS = 60
+FPS = 80
 
 
 class Player(pygame.sprite.Sprite):
@@ -263,7 +263,6 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.y = random.randrange(-100, -40)
             self.y = random.randrange(2, 7)
         if pygame.sprite.collide_mask(self, player):
-            created_boom(player.rect.x, player.rect.y)
             you_lose()
 
 
@@ -468,7 +467,7 @@ def main():
     for _ in range(2):
         global enemy
         enemy = Enemy(enemys)
-    for _ in range(1):
+    for _ in range(3):
         global meteor
         meteor = Meteorite(meteorits)
     global running
