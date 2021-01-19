@@ -5,6 +5,7 @@ import random
 import pygame
 
 TIMER_EVENT_TYPE = pygame.USEREVENT + 1
+YOU_LOSE_EVENT_TYPE = pygame.USEREVENT + 1
 running = False
 is_paused = False
 count = 0
@@ -54,8 +55,9 @@ class Rules:
                       'Помогите одержать над ними победу!'
                       'Управляйте космическим кораблем с помощью '
                       'стрелок <u><--</u> и <u>--></u>'
-                      ' или с помощью букв <u>A</u> и <u>D</u>. Для '
-                      'стрельбы используйте клавишу <u>ESCAPE</u>. '
+                      ' или с помощью клавищ <u>A</u> и <u>D</u>. Для'
+                      ' стрельбы используйте клавишу <u>ESCAPE</u>. '
+                      'Опасайтесь метеоритов!'
                       'Удачи!</b>',
             relative_rect=pygame.Rect((150, 100), (500, 400)),
             manager=manager
@@ -87,7 +89,7 @@ class Button:
     def render(self):
         font = pygame.font.Font(None, 30)
         text = font.render('Играть заново', True, (0, 0, 0))
-        pygame.draw.rect(screen, (114, 51, 119),
+        pygame.draw.rect(screen, (88, 69, 156),
                          (self.x, self.y, self.width, self.height), 0)
         screen.blit(text,
                     (self.x + (self.width - text.get_width()) // 2,
@@ -101,6 +103,7 @@ class Button:
             enemys.empty()
             bullets.empty()
             meteorits.empty()
+            decorate.empty()
             global count
             count = 0
             main()
@@ -116,7 +119,7 @@ class ButtonOut:
     def render(self):
         font = pygame.font.Font(None, 30)
         text = font.render('Выйти из игры', True, (0, 0, 0))
-        pygame.draw.rect(screen, (114, 51, 119),
+        pygame.draw.rect(screen, (88, 69, 156),
                          (self.x, self.y, self.width, self.height), 0)
         screen.blit(text,
                     (self.x + (self.width - text.get_width()) // 2,
@@ -138,7 +141,7 @@ class ButtonPause:
     def render(self):
         font = pygame.font.Font(None, 30)
         text = font.render('Пауза', True, (0, 0, 0))
-        pygame.draw.rect(screen, (114, 51, 119),
+        pygame.draw.rect(screen, (88, 69, 156),
                          (self.x, self.y, self.width, self.height), 0)
         screen.blit(text,
                     (self.x + (self.width - text.get_width()) // 2,
@@ -149,12 +152,13 @@ class ButtonPause:
                 self.y <= pos[1] <= self.height + self.y:
             global is_paused
             is_paused = not is_paused
-            pygame.time.set_timer(TIMER_EVENT_TYPE, 0 if is_paused else 20)
+            pygame.time.set_timer(TIMER_EVENT_TYPE,
+                                  0 if is_paused else 20)
 
     def render2(self):
         font = pygame.font.Font(None, 20)
         text = font.render('Продолжить', True, (0, 0, 0))
-        pygame.draw.rect(screen, (114, 51, 119),
+        pygame.draw.rect(screen, (88, 69, 156),
                          (self.x, self.y, self.width, self.height), 0)
         screen.blit(text,
                     (self.x + (self.width - text.get_width()) // 2,
@@ -162,7 +166,7 @@ class ButtonPause:
 
 
 pygame.init()
-fl = False
+flag = False
 size = WIDTH, HEIGHT = 800, 600
 pygame.time.set_timer(TIMER_EVENT_TYPE, 20)
 screen = pygame.display.set_mode(size)
@@ -206,6 +210,7 @@ sprites = pygame.sprite.Group()
 enemys = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 meteorits = pygame.sprite.Group()
+decorate = pygame.sprite.Group()
 
 
 class Meteorite(pygame.sprite.Sprite):
@@ -232,7 +237,8 @@ class Meteorite(pygame.sprite.Sprite):
         if pygame.sprite.collide_mask(self, player):
             pygame.time.set_timer(TIMER_EVENT_TYPE, 0)
             you_lose()
-        a = pygame.sprite.groupcollide(bullets, meteorits, True, False)
+        a = pygame.sprite.groupcollide(bullets, meteorits, True,
+                                       False)
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -256,10 +262,40 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.x = random.randrange(800 - 180)
             self.rect.y = random.randrange(-100, -40)
             self.y = random.randrange(2, 7)
-        if pygame.sprite.collide_mask(self, meteor):
-            self.rect.x = random.randrange(800 - 180)
-            self.rect.y = random.randrange(-100, -40)
-            self.y = random.randrange(2, 7)
+        if pygame.sprite.collide_mask(self, player):
+            created_boom(player.rect.x, player.rect.y)
+            you_lose()
+
+
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y):
+        super().__init__(decorate)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.rect.move(x, y)
+        self.cout = 0
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                                sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(
+                    pygame.Rect(frame_location, self.rect.size)))
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+        self.cout += 1
+        if self.cout == 32:
+            decorate.empty()
+
+
+def created_boom(x, y):
+    boom = AnimatedSprite(load_image("booms.png"), 8, 4, x, y)
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -277,6 +313,7 @@ class Bullet(pygame.sprite.Sprite):
     def update(self):
         self.rect.y += self.move
         if pygame.sprite.groupcollide(bullets, enemys, True, True):
+            created_boom(self.rect.x - 36, self.rect.y-100)
             Enemy(enemys)
             global count
             count += 1
@@ -309,11 +346,13 @@ def main_game():
     enemys.draw(screen)
     bullets.draw(screen)
     meteorits.draw(screen)
+    decorate.draw(screen)
 
 
 def write_count(count):
     font = pygame.font.Font(None, 30)
-    text = font.render(f'Текущий счет: {count}', True, (255, 255, 255))
+    text = font.render(f'Текущий счет: {count}', True,
+                       (255, 255, 255))
     screen.blit(text, (5, 5))
 
 
@@ -329,30 +368,11 @@ def terminate():
 
 
 def start_screen():
-    intro_text = ["WAR OF THE WORLDS", "",
-                  "",
-                  "Добро пожаловать в WAR OF THE WORLDS",
-                  "Нажмите PLAY для начала игры"]
-
-    fon = pygame.transform.scale(load_image('fon.jpg'),
-                                 (WIDTH, HEIGHT))
     rul = Rules()
     play1 = Play()
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 100
-    for line in intro_text:
-        string_rendered = font.render(line, True,
-                                      pygame.Color('white'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 15
-        intro_rect.top = text_coord
-        intro_rect.x = 15
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
 
     while True:
-        flag = False
+        global flag
         time_delta = clock.tick(60) / 1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -374,6 +394,10 @@ def start_screen():
                         return True
                     if event.ui_element == rul.rules:
                         flag = True
+                        fon = pygame.transform.scale(
+                            load_image('fon.jpg'),
+                            (WIDTH, HEIGHT))
+                        screen.blit(fon, (0, 0))
                         rul.show_rules()
                     if event.ui_element == rul.back:
                         flag = False
@@ -404,7 +428,7 @@ def start_screen():
                             screen.blit(string_rendered, intro_rect)
             manager.process_events(event)
         if flag:
-            intro_text = []
+            intro_text = ''
         else:
             intro_text = ["WAR OF THE WORLDS", "",
                           "",
@@ -427,10 +451,10 @@ def start_screen():
             intro_rect.top = text_coord
             intro_rect.x = 15
             text_coord += intro_rect.height
-            screen.blit(string_rendered, intro_rect)
+            if not flag:
+                screen.blit(string_rendered, intro_rect)
         manager.update(time_delta)
         manager.draw_ui(screen)
-        # pygame.display.flip()
         clock.tick(FPS)
 
 
@@ -444,7 +468,7 @@ def main():
     for _ in range(2):
         global enemy
         enemy = Enemy(enemys)
-    for _ in range(3):
+    for _ in range(1):
         global meteor
         meteor = Meteorite(meteorits)
     global running
@@ -458,8 +482,8 @@ def main():
                 all_sprites.draw(screen)
                 pygame.display.flip()
             else:
-                pygame.display.flip()
                 main_game()
+                pygame.display.flip()
                 if is_paused:
                     button_pause.render2()
                 else:
@@ -470,6 +494,7 @@ def main():
                 enemys.update()
                 bullets.update()
                 meteorits.update()
+                decorate.update()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 button_pause.check_click(event.pos)
             if event.type == pygame.KEYDOWN:
@@ -516,7 +541,8 @@ if not running:
             f = open("best_count", mode='w')
             f.write(f'{count}')
             f.close()
-        textBC = font.render(f'Лучший счет: {BEST_COUNT}', True, (0, 0, 0))
+        textBC = font.render(f'Лучший счет: {BEST_COUNT}', True,
+                             (0, 0, 0))
         screen.blit(text, (300, 125))
         screen.blit(textBC, (300, 165))
         button.render()
